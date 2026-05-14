@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Per-color-scheme theme-color values match the actual page-bg under
+         the dark and light palettes in src/styles.css (#1d2027 / #eef0f2),
+         so Chrome / Safari / Edge tint the address bar to match whichever
+         theme the OS or the reader's toggle selected. The old single
+         #0a0e14 was darker than either real palette. -->
+    <meta name="theme-color" content="#1d2027" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="generator" content="blog.niclaslindstedt.se" />
+    <!-- Send the full referrer to same-origin / HTTPS targets but only the
+         origin downgraded to HTTP, never to plain HTTP from HTTPS. Default
+         browser policy (`strict-origin-when-cross-origin`) is similar; we
+         set it explicitly so it survives any browser-default changes. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Niclas Lindstedt's blog — RSS"
+      href="/feed.xml"
+    />
+    <link
+      rel="alternate"
+      type="application/atom+xml"
+      title="Niclas Lindstedt's blog — Atom"
+      href="/feed.atom"
+    />
+    <link
+      rel="alternate"
+      type="application/feed+json"
+      title="Niclas Lindstedt's blog — JSON Feed"
+      href="/feed.json"
+    />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#98c379" />
+    <link rel="me" href="https://github.com/niclaslindstedt" />
+    <title>Niclas Lindstedt's blog — AI, agents, and open source</title>
+    <meta
+      name="description"
+      content="Writing about AI, agents, and open source — hands-on notes from building tools like zag, zad, ztf, zig, and oss-spec."
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
