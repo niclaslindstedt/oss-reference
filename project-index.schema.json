@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/niclaslindstedt/oss-reference/project-index.schema.json",
+  "title": "OSS Spec Project Index",
+  "description": "Index of projects that implement OSS_SPEC.md. Each project entry tracks where the project's repo lives and which OSS_SPEC sections it can serve as a reference implementation for.",
+  "type": "object",
+  "required": ["version", "spec_version", "source", "projects"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path or URL to this schema file."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver version of this index document's shape."
+    },
+    "spec_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Version of OSS_SPEC.md the section references in this file are validated against."
+    },
+    "source": {
+      "type": "string",
+      "format": "uri",
+      "description": "Where the indexed projects come from (e.g. github.com/niclaslindstedt)."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date",
+      "description": "ISO date of the last index regeneration."
+    },
+    "projects": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/project" }
+    }
+  },
+  "$defs": {
+    "project": {
+      "type": "object",
+      "required": ["name", "github", "description", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "kebab-case project name; matches the GitHub repo name."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "description": "One-sentence description of what the project is."
+        },
+        "github": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://github\\.com/[^/]+/[^/]+/?$"
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri"
+        },
+        "package": {
+          "type": "string",
+          "format": "uri",
+          "description": "Registry URL (crates.io, npm, pypi, etc.)."
+        },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Alternate names this project is known by (former names, registry slugs, domains)."
+        },
+        "language": {
+          "type": "string",
+          "description": "Primary implementation language."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "maintained", "wip", "archived"]
+        },
+        "showcases": {
+          "type": "array",
+          "description": "OSS_SPEC sections this project can serve as a reference implementation for. Each entry maps a spec section to a concrete location in this repo (under examples/) where the project's implementation has been copied.",
+          "items": { "$ref": "#/$defs/showcase" }
+        }
+      }
+    },
+    "showcase": {
+      "type": "object",
+      "required": ["section", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "section": {
+          "type": "string",
+          "pattern": "^\\d+(\\.\\d+){0,2}$",
+          "description": "OSS_SPEC.md section number this showcase implements (e.g. \"10.3\", \"21.5\")."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short label for the showcase, e.g. \"Release pipeline\" or \"sync-oss-spec skill\"."
+        },
+        "path": {
+          "type": "string",
+          "description": "Path inside this repo where the copied example lives, relative to the repo root (typically examples/<project>/<showcase>/)."
+        },
+        "source_path": {
+          "type": "string",
+          "description": "Path inside the upstream project where the canonical implementation lives."
+        },
+        "source_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$",
+          "description": "Commit hash of the upstream project the example was last copied from."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Free-form notes on why this is a good reference (or caveats)."
+        }
+      }
+    }
+  }
+}
