@@ -1,0 +1,80 @@
+{
+  "$schema": "./project-index.schema.json",
+  "version": "1.0.0",
+  "spec_version": "2.7.0",
+  "source": "https://github.com/niclaslindstedt",
+  "updated_at": "2026-05-14",
+  "projects": [
+    {
+      "name": "zag",
+      "description": "One CLI for Claude, Codex, Gemini, Copilot, and Ollama — keep your workflows stable even as agents change weekly.",
+      "github": "https://github.com/niclaslindstedt/zag",
+      "package": "https://crates.io/crates/zag-cli",
+      "language": "Rust",
+      "status": "active",
+      "showcases": []
+    },
+    {
+      "name": "zig",
+      "description": "Describe workflows, share them, run them. A workflow runtime written in Rust.",
+      "github": "https://github.com/niclaslindstedt/zig",
+      "package": "https://crates.io/crates/zig-cli",
+      "language": "Rust",
+      "status": "active",
+      "showcases": []
+    },
+    {
+      "name": "zad",
+      "description": "Agent adapter system — hook one agent up to several service providers through a uniform interface.",
+      "github": "https://github.com/niclaslindstedt/zad",
+      "package": "https://crates.io/crates/zad",
+      "language": "Rust",
+      "status": "active",
+      "showcases": []
+    },
+    {
+      "name": "ztf",
+      "description": "End-to-end testing harness that uses `zag` verification to run complex flows against real agents.",
+      "github": "https://github.com/niclaslindstedt/ztf",
+      "package": "https://crates.io/crates/ztf",
+      "language": "Rust",
+      "status": "wip",
+      "showcases": []
+    },
+    {
+      "name": "juris",
+      "description": "CLI that collects and normalises Swedish legal documents from official government sources.",
+      "github": "https://github.com/niclaslindstedt/juris",
+      "homepage": "https://niclaslindstedt.github.io/juris/",
+      "package": "https://pypi.org/project/juris/",
+      "language": "Python",
+      "status": "active",
+      "showcases": []
+    },
+    {
+      "name": "spotifai",
+      "description": "AI-augmented Spotify companion that uses LLMs to plan, curate, and explain listening sessions.",
+      "github": "https://github.com/niclaslindstedt/spotifai",
+      "status": "wip",
+      "showcases": []
+    },
+    {
+      "name": "cv",
+      "description": "Personal site and CV for Niclas Lindstedt built with Vite, React, and TypeScript.",
+      "github": "https://github.com/niclaslindstedt/cv",
+      "homepage": "https://niclaslindstedt.se",
+      "aliases": ["niclaslindstedt.se"],
+      "language": "TypeScript",
+      "status": "active",
+      "showcases": []
+    },
+    {
+      "name": "blog",
+      "description": "Markdown blog rendered through a terminal-themed React frontend; content is authored and maintained by Claude skills.",
+      "github": "https://github.com/niclaslindstedt/blog",
+      "language": "TypeScript",
+      "status": "active",
+      "showcases": []
+    }
+  ]
+}

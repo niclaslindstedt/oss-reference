@@ -1,0 +1,24 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+*.iml
+
+# Tooling caches
+.cache/
+.tmp/
+.tmpdir/
+.npm/
+node_modules/
+
+# Skill scratch space (copy-example clones upstream repos into mktemp dirs,
+# but if any agent ever drops scratch under the repo root, keep it out of git)
+scratch/
+.scratch/
+**/.scratch/
+
+# Local Claude Code settings (per-user, not shared)
+.claude/settings.local.json
