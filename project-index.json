@@ -84,7 +84,15 @@
       "github": "https://github.com/niclaslindstedt/blog",
       "language": "TypeScript",
       "status": "active",
-      "showcases": []
+      "showcases": [
+        {
+          "section": "11.3",
+          "title": "SEO and discoverability",
+          "path": "examples/blog/11.3",
+          "source_path": "website/src/seo/, website/scripts/seo/, website/scripts/generate-seo.ts, website/scripts/check-seo.ts, website/index.html, website/public/robots.txt, .github/workflows/seo.yml, .github/workflows/lighthouse.yml, .github/lighthouse/lighthouserc.json",
+          "source_commit": "7c217084958f8d734e271f08b34bf4161dbc6d6d"
+        }
+      ]
     }
   ]
 }
