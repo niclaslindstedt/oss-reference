@@ -1,6 +1,6 @@
 ---
 name: copy-example
-description: "Use when adding or refreshing a reference example for an OSS_SPEC concept. Given a project name from project-index.json and the spec section to showcase, clones the upstream repo, locates the concept's implementation, copies it under examples/<project>/<section>/, and registers a showcase entry in the index."
+description: "Use whenever the user wants to copy, lift, port, mirror, vendor, or use one of their own projects as a reference for an OSS_SPEC concept — e.g. \"copy the release process from zag\", \"use zag's CI as reference\", \"showcase how juris does X\", \"steal the release pipeline from zag\", \"pull in zag's version-bump workflow\", \"add a showcase\", \"register zag's release flow\". Trigger on intent (copy a real implementation from one of our indexed projects into this curated repo), not on the literal word \"example\". The skill clones the named project from project-index.json, locates the relevant files for the OSS_SPEC section, copies them under examples/<project>/<section>/, writes the showcase README, and upserts the entry in the project index."
 ---
 
 # Copying a reference example into oss-reference
@@ -63,7 +63,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    | §8.4 CHANGELOG.md                         | `CHANGELOG.md`                                                                                                 |
    | §9 Makefile                               | `Makefile`                                                                                                     |
    | §10.1 CI pipeline                         | `.github/workflows/ci.yml`                                                                                     |
-   | §10.3 Release pipeline                    | `.github/workflows/version-bump.yml`, `.github/workflows/release.yml`, `scripts/release.sh` (when present)     |
+   | §10.3 Release pipeline                    | `.github/workflows/version-bump.yml`, `.github/workflows/release.yml`, `scripts/release.sh`, `scripts/generate-changelog.sh`, `scripts/update-versions.sh` (last two when present — the release workflow calls them) |
    | §10.4 Website deployment                  | `.github/workflows/pages.yml`                                                                                  |
    | §10.5 Toolchain pinning                   | `rust-toolchain.toml` / `.nvmrc` / `.python-version` / `go.mod` `toolchain` directive (whichever applies)      |
    | §11.1 docs/                               | `docs/`                                                                                                        |
@@ -90,32 +90,42 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    DEST="examples/$PROJECT/$SECTION"
    ```
 
-   For a section that needs multiple files (e.g. §10.3 spans three workflows plus a script), use the section number as the destination directory and copy each file into it, preserving its basename.
+   For a section that spans multiple upstream files in different directories (e.g. §10.3, which mixes `.github/workflows/*.yml` with `scripts/*.sh`), use the section number as the destination directory and **preserve the upstream relative path** under it (`examples/<project>/<section>/.github/workflows/release.yml`, `examples/<project>/<section>/scripts/release.sh`, …). Flattening every file into one directory loses the distinction between workflows and scripts and makes the example unreadable. Only flatten when every copied file genuinely belongs in the same directory.
 
-4. **Copy the files**, preserving symlinks. Use `rsync -a` if available — it handles directories and symlinks cleanly:
+4. **Copy the files**, preserving symlinks. `rsync -a` is the cleanest tool when available; fall back to `cp -a` if it isn't installed (common in minimal containers):
 
    ```sh
    rm -rf "$DEST"
    mkdir -p "$DEST"
+   COPY="rsync -a"; command -v rsync >/dev/null || COPY="cp -a"
    if [ -d "$SCRATCH/$SOURCE_PATH" ]; then
-     rsync -a "$SCRATCH/$SOURCE_PATH/" "$DEST/"
+     $COPY "$SCRATCH/$SOURCE_PATH/" "$DEST/"
    else
-     rsync -a "$SCRATCH/$SOURCE_PATH" "$DEST/"
+     # When preserving upstream layout, recreate the parent directory first.
+     mkdir -p "$DEST/$(dirname "$SOURCE_PATH")"
+     $COPY "$SCRATCH/$SOURCE_PATH" "$DEST/$SOURCE_PATH"
    fi
    ```
 
-5. **Add a README inside `$DEST`** describing what this example is, which upstream commit it came from, and which OSS_SPEC section it implements. One paragraph is enough:
+5. **Write `$DEST/README.md`.** Always write a README — never skip this, never leave the previous one in place during a refresh. It is the example's user manual and the only way a reader knows what they're looking at and how to use it.
 
-   ```markdown
-   # <project> §<section> — <title>
+   The README must contain **all five** of the following, in this order. Skip a section only when it is genuinely N/A (e.g. a single-file showcase like §2 LICENSE has no meaningful file layout to describe), and say *why* it was skipped rather than silently omitting it.
 
-   Reference implementation of OSS_SPEC.md §<section> as it appears in
-   [<project>](<github>) at commit `<short-sha>`.
+   1. **Title and attribution** — `# <project> §<section> — <title>`, then a one-paragraph summary saying what the example is and naming the upstream short SHA. Link to the spec section (relative path from `$DEST` back to `OSS_SPEC.md` — typically `../../../OSS_SPEC.md`).
+   2. **File layout** — a fenced tree showing every file copied, with one-line comments. The reader should be able to map files to spec steps without opening them.
+   3. **How this sits in `<project>`** — concrete, project-specific context that you cannot get from the spec alone. Cover, when relevant:
+      - Repo-root paths and whether the files are nested in a sub-package.
+      - Secrets the example depends on and which workflow uses which (e.g. `RELEASE_TOKEN` vs `GITHUB_TOKEN`).
+      - Branch/tag protections, environments, or repo settings the example assumes.
+      - Toolchain pins, registry trusted-publisher configuration, and any required external setup.
+      - Recommended reading order if the files are non-trivial.
+   4. **How to adopt this in another project** — a numbered, actionable adoption guide. The reader's job is to drop these files into *their* repo and have them work. Cover the steps in order, naming the files they touch and the things they must change (e.g. swap a Rust-specific manifest rewrite for a Node one). Call out anything stack-specific so a reader on a different stack isn't misled.
+   5. **Caveats** — known-not-portable pieces, prerequisites (Conventional Commits, branch protections, etc.), and anything that will surprise a copier. Better to over-warn than under-warn.
+   6. **Provenance** — the closing line `Refreshed by \`.agent/skills/copy-example\` from <source_path> at <project>@<short-sha>.`
 
-   <one paragraph explaining what the example demonstrates and where to look first>
+   Tone: write it for a maintainer who is about to vendor this into a real repo, not for a casual reader. Be specific. Name files, secrets, jobs, and steps. If something is stack-specific (Rust workspace, Python package, etc.), say so explicitly so a reader on a different stack adapts the right pieces.
 
-   Refreshed by `.agent/skills/copy-example` from `<source_path>`.
-   ```
+   Use [`examples/zag/10.3/README.md`](../../../examples/zag/10.3/README.md) as the canonical reference for what "good" looks like. When a new showcase introduces a structural pattern that one doesn't cover (e.g. a multi-binary website deploy with preview environments), copy that pattern back into this checklist so the next agent inherits it.
 
 6. **Register the showcase** in `project-index.json`. If an entry with the same `section` already exists for this project, replace it; otherwise append:
 
@@ -166,7 +176,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
 - [ ] Clone the upstream repo and capture `SRC_COMMIT`.
 - [ ] Resolve `SOURCE_PATH` (from the user, from the heuristics table, or interactively).
 - [ ] Copy files into `examples/<project>/<section>/`, preserving symlinks.
-- [ ] Write or refresh the destination `README.md` with the project / section / commit attribution.
+- [ ] Write or refresh the destination `README.md` — title + attribution, file layout tree, "How this sits in `<project>`", "How to adopt this in another project", caveats, and the provenance line (see step 5 above for the full spec).
 - [ ] Upsert the showcase entry in `project-index.json` and revalidate against the schema.
 - [ ] Stamp the baseline:
 
@@ -175,7 +185,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
 ## Verification
 
 1. `examples/<project>/<section>/` exists and is non-empty.
-2. `examples/<project>/<section>/README.md` names the upstream commit.
+2. `examples/<project>/<section>/README.md` exists, names the upstream short SHA, and contains all five required sections (title/attribution, file layout, "How this sits in `<project>`", "How to adopt this in another project", caveats, provenance) — or explicitly notes which were skipped and why.
 3. `ajv validate -s project-index.schema.json -d project-index.json` exits 0.
 4. `jq '.projects[] | select(.name == $p) | .showcases[] | select(.section == $s)' --arg p "$PROJECT" --arg s "$SECTION" project-index.json` returns exactly one object whose `source_commit` matches `SRC_COMMIT`.
 5. `.last-updated` was rewritten with the current `HEAD`.

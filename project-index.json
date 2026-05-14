@@ -12,7 +12,15 @@
       "package": "https://crates.io/crates/zag-cli",
       "language": "Rust",
       "status": "active",
-      "showcases": []
+      "showcases": [
+        {
+          "section": "10.3",
+          "title": "Release pipeline",
+          "path": "examples/zag/10.3",
+          "source_path": ".github/workflows/version-bump.yml, .github/workflows/release.yml, scripts/release.sh, scripts/generate-changelog.sh, scripts/update-versions.sh",
+          "source_commit": "4a837b468c708dff517cdfa2a06187ad975d0438"
+        }
+      ]
     },
     {
       "name": "zig",
@@ -63,7 +71,9 @@
       "description": "Personal site and CV for Niclas Lindstedt built with Vite, React, and TypeScript.",
       "github": "https://github.com/niclaslindstedt/cv",
       "homepage": "https://niclaslindstedt.se",
-      "aliases": ["niclaslindstedt.se"],
+      "aliases": [
+        "niclaslindstedt.se"
+      ],
       "language": "TypeScript",
       "status": "active",
       "showcases": []

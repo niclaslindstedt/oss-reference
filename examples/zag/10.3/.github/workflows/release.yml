@@ -1,0 +1,343 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: zag
+
+# Default to no permissions; every job declares its own
+# least-privilege `permissions:` block (see OSS_SPEC §10.3).
+permissions: {}
+
+jobs:
+  update-repo:
+    name: Update changelog and versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      commit_sha: ${{ steps.push.outputs.commit_sha }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: dtolnay/rust-toolchain@1.88.0
+
+      - name: Generate changelog
+        run: scripts/generate-changelog.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Update versions
+        run: scripts/update-versions.sh "${GITHUB_REF_NAME#v}"
+
+      - name: Commit and push
+        id: push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): update changelog and versions for ${GITHUB_REF_NAME}"
+            git push origin main
+          fi
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Update tag to new commit
+        run: |
+          git tag -f "${GITHUB_REF_NAME}" HEAD
+          git push origin "${GITHUB_REF_NAME}" --force
+
+      - name: Extract release notes
+        id: notes
+        run: |
+          # Extract the latest changelog section (between first and second ## [)
+          awk '/^## \[/{if(found) exit; found=1; next} found' CHANGELOG.md > release-notes.md
+          cat release-notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: release-notes.md
+          retention-days: 1
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: update-repo
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use_cross: true
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - uses: dtolnay/rust-toolchain@1.88.0
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use_cross == true
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: Build
+        shell: bash
+        run: |
+          if [ "${{ matrix.use_cross }}" = "true" ]; then
+            cross build --release --target ${{ matrix.target }}
+          else
+            cargo build --release --target ${{ matrix.target }}
+          fi
+
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TARGET="${{ matrix.target }}"
+          STEM="${BINARY_NAME}-v${VERSION}-${TARGET}"
+          mkdir -p dist staging
+          cp "target/${TARGET}/release/${BINARY_NAME}" staging/
+          cp README.md staging/ 2>/dev/null || true
+          cp LICENSE* staging/ 2>/dev/null || true
+          tar -czf "dist/${STEM}.tar.gz" -C staging .
+          (cd dist && sha256sum "${STEM}.tar.gz" > "${STEM}.tar.gz.sha256")
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $Version = "$env:GITHUB_REF_NAME".TrimStart('v')
+          $Target = "${{ matrix.target }}"
+          $Stem = "$env:BINARY_NAME-v${Version}-${Target}"
+          New-Item -ItemType Directory -Force dist, staging | Out-Null
+          Copy-Item "target/$Target/release/$env:BINARY_NAME.exe" staging/
+          if (Test-Path README.md) { Copy-Item README.md staging/ }
+          Get-ChildItem LICENSE* -ErrorAction SilentlyContinue | Copy-Item -Destination staging/
+          Compress-Archive -Path staging/* -DestinationPath "dist/${Stem}.zip"
+          $Hash = (Get-FileHash "dist/${Stem}.zip" -Algorithm SHA256).Hash.ToLower()
+          "${Hash}  ${Stem}.zip" | Out-File -Encoding ascii "dist/${Stem}.zip.sha256"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.target }}
+          path: dist/
+          retention-days: 1
+
+  release:
+    name: GitHub Release
+    needs: [update-repo, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Prepare release body
+        id: body
+        run: |
+          if [ -f artifacts/release-notes.md ] && [ -s artifacts/release-notes.md ]; then
+            # Use changelog-generated notes
+            {
+              echo 'RELEASE_BODY<<RELEASE_EOF'
+              cat artifacts/release-notes.md
+              echo 'RELEASE_EOF'
+            } >> "$GITHUB_ENV"
+            rm -f artifacts/release-notes.md
+          else
+            echo 'RELEASE_BODY=' >> "$GITHUB_ENV"
+          fi
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          body: ${{ env.RELEASE_BODY }}
+          generate_release_notes: ${{ env.RELEASE_BODY == '' }}
+          files: artifacts/*
+
+  sync-release-notes:
+    name: Sync release notes
+    needs: [update-repo, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - name: Sync release notes from CHANGELOG
+        run: scripts/sync-releases.sh "${GITHUB_REF_NAME#v}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  publish-crates:
+    name: Publish to crates.io
+    needs: [update-repo, build]
+    runs-on: ubuntu-latest
+    environment: crates-registry
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - uses: dtolnay/rust-toolchain@1.88.0
+
+      - name: Authenticate to crates.io (trusted publishing)
+        id: crates-auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish zag-agent
+        run: cargo publish -p zag-agent
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish zag-orch
+        run: cargo publish -p zag-orch
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish zag-serve
+        run: cargo publish -p zag-serve
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish zag (facade)
+        run: cargo publish -p zag
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+      - name: Wait for crates.io index update
+        run: sleep 30
+
+      - name: Publish zag-cli
+        run: cargo publish -p zag-cli
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates-auth.outputs.token }}
+
+  publish-npm:
+    name: Publish to npm
+    needs: [update-repo, build]
+    runs-on: ubuntu-latest
+    environment: npm-registry
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - uses: actions/setup-node@v6
+        with:
+          # Node 24 ships with npm >= 11.5.1, which has native trusted-publishing
+          # support. This avoids the `npm install -g npm@latest` self-upgrade
+          # step entirely (along with its self-overwrite race).
+          node-version: '24'
+
+      - name: Install dependencies
+        working-directory: bindings/typescript
+        run: npm install
+
+      - name: Publish zag-agent
+        working-directory: bindings/typescript
+        run: npm publish --access public --provenance
+
+  publish-nuget:
+    name: Publish to NuGet
+    needs: [update-repo, build]
+    runs-on: ubuntu-latest
+    environment: nuget-registry
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0'
+
+      - name: Pack
+        working-directory: bindings/csharp/src/Zag
+        run: dotnet pack -c Release
+
+      - name: NuGet login (trusted publishing)
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: niclaslindstedt
+
+      - name: Publish Zag
+        working-directory: bindings/csharp/src/Zag
+        run: dotnet nuget push bin/Release/*.nupkg --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [update-repo, build]
+    runs-on: ubuntu-latest
+    environment: pypi-registry
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.update-repo.outputs.commit_sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: pip install build
+
+      - name: Build package
+        working-directory: bindings/python
+        run: python -m build
+
+      - name: Publish zag-agent
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: bindings/python/dist
