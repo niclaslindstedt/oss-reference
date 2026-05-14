@@ -63,7 +63,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    | §8.4 CHANGELOG.md                         | `CHANGELOG.md`                                                                                                 |
    | §9 Makefile                               | `Makefile`                                                                                                     |
    | §10.1 CI pipeline                         | `.github/workflows/ci.yml`                                                                                     |
-   | §10.3 Release pipeline                    | `.github/workflows/version-bump.yml`, `.github/workflows/release.yml`, `scripts/release.sh` (when present)     |
+   | §10.3 Release pipeline                    | `.github/workflows/version-bump.yml`, `.github/workflows/release.yml`, `scripts/release.sh`, `scripts/generate-changelog.sh`, `scripts/update-versions.sh` (last two when present — the release workflow calls them) |
    | §10.4 Website deployment                  | `.github/workflows/pages.yml`                                                                                  |
    | §10.5 Toolchain pinning                   | `rust-toolchain.toml` / `.nvmrc` / `.python-version` / `go.mod` `toolchain` directive (whichever applies)      |
    | §11.1 docs/                               | `docs/`                                                                                                        |
@@ -90,17 +90,20 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    DEST="examples/$PROJECT/$SECTION"
    ```
 
-   For a section that needs multiple files (e.g. §10.3 spans three workflows plus a script), use the section number as the destination directory and copy each file into it, preserving its basename.
+   For a section that spans multiple upstream files in different directories (e.g. §10.3, which mixes `.github/workflows/*.yml` with `scripts/*.sh`), use the section number as the destination directory and **preserve the upstream relative path** under it (`examples/<project>/<section>/.github/workflows/release.yml`, `examples/<project>/<section>/scripts/release.sh`, …). Flattening every file into one directory loses the distinction between workflows and scripts and makes the example unreadable. Only flatten when every copied file genuinely belongs in the same directory.
 
-4. **Copy the files**, preserving symlinks. Use `rsync -a` if available — it handles directories and symlinks cleanly:
+4. **Copy the files**, preserving symlinks. `rsync -a` is the cleanest tool when available; fall back to `cp -a` if it isn't installed (common in minimal containers):
 
    ```sh
    rm -rf "$DEST"
    mkdir -p "$DEST"
+   COPY="rsync -a"; command -v rsync >/dev/null || COPY="cp -a"
    if [ -d "$SCRATCH/$SOURCE_PATH" ]; then
-     rsync -a "$SCRATCH/$SOURCE_PATH/" "$DEST/"
+     $COPY "$SCRATCH/$SOURCE_PATH/" "$DEST/"
    else
-     rsync -a "$SCRATCH/$SOURCE_PATH" "$DEST/"
+     # When preserving upstream layout, recreate the parent directory first.
+     mkdir -p "$DEST/$(dirname "$SOURCE_PATH")"
+     $COPY "$SCRATCH/$SOURCE_PATH" "$DEST/$SOURCE_PATH"
    fi
    ```
 
