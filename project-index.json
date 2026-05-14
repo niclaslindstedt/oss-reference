@@ -76,7 +76,15 @@
       ],
       "language": "TypeScript",
       "status": "active",
-      "showcases": []
+      "showcases": [
+        {
+          "section": "10.4",
+          "title": "Website deployment",
+          "path": "examples/cv/10.4",
+          "source_path": ".github/workflows/pages.yml",
+          "source_commit": "846ef7c814bf5b2f8661e151295d0d525e339159"
+        }
+      ]
     },
     {
       "name": "blog",
