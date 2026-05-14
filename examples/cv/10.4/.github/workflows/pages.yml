@@ -1,0 +1,77 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Restore data-cache JSONs
+        # Pulls github-activity.json + project-stats.json from the data-cache
+        # branch (refreshed daily by data-refresh.yml). Deploys must NOT call
+        # the GraphQL API directly — that's how earlier deploys' good data
+        # gets overwritten when GitHub rate-limits us. If the branch doesn't
+        # exist yet, this step is a no-op and the cold-start path runs.
+        run: |
+          set -e
+          if git fetch origin data-cache --depth 1 2>/dev/null; then
+            mkdir -p src/data
+            git show origin/data-cache:src/data/github-activity.json \
+              > src/data/github-activity.json 2>/dev/null || true
+            git show origin/data-cache:src/data/project-stats.json \
+              > src/data/project-stats.json 2>/dev/null || true
+            echo "Restored data-cache JSONs:"
+            ls -la src/data/github-activity.json src/data/project-stats.json \
+              2>/dev/null || echo "  (none restored)"
+          else
+            echo "data-cache branch not found — proceeding without prefetch."
+          fi
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: make build
+        env:
+          VITE_GOATCOUNTER_ENDPOINT: ${{ secrets.VITE_GOATCOUNTER_ENDPOINT }}
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy-attempt-1.outputs.page_url || steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deploy-attempt-1
+        name: Deploy to GitHub Pages (attempt 1)
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+      - if: steps.deploy-attempt-1.outcome == 'failure'
+        name: Wait before retry
+        run: sleep 90
+      - id: deployment
+        name: Deploy to GitHub Pages (attempt 2)
+        if: steps.deploy-attempt-1.outcome == 'failure'
+        uses: actions/deploy-pages@v5
