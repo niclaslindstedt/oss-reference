@@ -75,6 +75,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    | §15 issue + PR templates                  | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`                                                  |
    | §19 logging                               | `src/output.*` (or the project's equivalent central output module)                                             |
    | §21.x agent skills                        | `.agent/skills/<skill-name>/`                                                                                  |
+   | §21.5 `sync-oss-spec` skill               | `.agent/skills/sync-oss-spec/` (the playbook + `.last-updated`)                                                |
    | §22 bootstrap checklist                   | not a single file — skip; use `update-readme` if a README needs the checklist quoted                           |
 
    If the heuristic fires multiple candidates and the user did not specify, ask which to copy. If the path does not exist upstream:
@@ -170,6 +171,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
 | The section needs multiple files                      | Copy each file into the same `examples/<project>/<section>/` directory; record the directory in `path` and a comma-joined or representative file path in `source_path` (or expand the schema).   |
 | The section concept does not exist upstream           | Stop and tell the user which projects *do* implement it — don't fabricate an example.                                                                                                              |
 | Upstream license forbids redistribution               | Stop. Record the link in the showcase's `notes` field with `path` omitted, so the index points readers at the upstream rather than copying.                                                       |
+| Section enumerates multiple distinct sub-artifacts (e.g. §21.5 lists `update-readme`, `update-docs`, …, `sync-oss-spec`) | The current schema allows one entry per `(project, section)`, so a single showcase necessarily scopes down to one sub-artifact. Pick the sub-artifact the user named, mention the others as "out of scope" in the README, and flatten the source dir into `examples/<project>/<section>/`. If a project later needs multiple sub-artifact showcases under the same spec section, extend `project-index.schema.json` to allow it (e.g. an array of `path`/`source_path` records) before adding the second one. |
 
 ## Update checklist
 

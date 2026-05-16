@@ -26,6 +26,13 @@
           "path": "examples/zag/3",
           "source_path": "README.md",
           "source_commit": "54c70b93c7942b247acb98f8988e198aa44e2904"
+        },
+        {
+          "section": "21.5",
+          "title": "sync-oss-spec skill",
+          "path": "examples/zag/21.5",
+          "source_path": ".agent/skills/sync-oss-spec/",
+          "source_commit": "54c70b93c7942b247acb98f8988e198aa44e2904"
         }
       ]
     },
