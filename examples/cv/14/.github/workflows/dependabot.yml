@@ -1,0 +1,34 @@
+name: Dependabot
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, closed]
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any Dependabot PR is open
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          count=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --author app/dependabot \
+            --json number \
+            --jq 'length')
+          echo "Open Dependabot PRs: $count"
+          if [ "$count" -gt 0 ]; then
+            echo "::error::There are $count open Dependabot PR(s)."
+            exit 1
+          fi
