@@ -89,7 +89,7 @@
     },
     "showcase": {
       "type": "object",
-      "required": ["section", "title"],
+      "required": ["section", "title", "source_commit"],
       "additionalProperties": false,
       "properties": {
         "section": {
