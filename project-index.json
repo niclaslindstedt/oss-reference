@@ -104,6 +104,13 @@
           "path": "examples/cv/14",
           "source_path": ".github/dependabot.yml, .github/workflows/dependabot.yml, .agent/skills/fix-dependabot-prs/",
           "source_commit": "6e08b9c415cec43e94372ad39bf1121902507704"
+        },
+        {
+          "section": "20",
+          "title": "Frontend testing (visual regression + end-to-end)",
+          "path": "examples/cv/20",
+          "source_path": "playwright.config.ts, playwright.a11y.config.ts, playwright.a11y-manual.config.ts, tests/visual/, tests/a11y/, tests/a11y-manual/, .claude/rules/visual-snapshots.md, .claude/rules/tests.md",
+          "source_commit": "1c98b0c6888502adba65eeb77bc07b8ef2fc5952"
         }
       ]
     },
