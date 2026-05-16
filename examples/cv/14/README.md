@@ -1,7 +1,7 @@
 # cv §14 — Dependency hygiene
 
 Reference implementation of [OSS_SPEC.md §14](../../../OSS_SPEC.md) as it
-appears in [cv](https://github.com/niclaslindstedt/cv) at commit `846ef7c`.
+appears in [cv](https://github.com/niclaslindstedt/cv) at commit `6e08b9c`.
 
 cv's dependency-hygiene story is four pieces working in concert: the standard
 `.github/dependabot.yml` config that opens the bump PRs, a
@@ -215,4 +215,4 @@ or agent drains the queue).
 
 Refreshed by `.agent/skills/copy-example` from `.github/dependabot.yml`,
 `.github/workflows/dependabot.yml`, `.agent/skills/fix-dependabot-prs/` at
-`niclaslindstedt/cv@846ef7c`.
+`niclaslindstedt/cv@6e08b9c`.
