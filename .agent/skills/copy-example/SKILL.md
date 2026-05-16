@@ -71,6 +71,7 @@ grep -qE "^#{2,4} ${SECTION}\\. |^#{2,4} ${SECTION} " OSS_SPEC.md \
    | §11.3 SEO and discoverability             | the relevant subset of `website/` plus any `scripts/` that prerender or generate metadata                      |
    | §12.x CLI surfaces                        | `src/` entry points for `--help-agent`, `--debug-agent`, `man/`, `docs`/`man` subcommands                      |
    | §13.5 prompts/                            | `prompts/`                                                                                                     |
+   | §14 Dependency hygiene                    | `.github/dependabot.yml` (required); plus any local "forcing function" workflow (`.github/workflows/dependabot.yml`) and the project's queue-draining agent skill (`.agent/skills/fix-dependabot-prs/`) when present |
    | §15 issue + PR templates                  | `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`                                                  |
    | §19 logging                               | `src/output.*` (or the project's equivalent central output module)                                             |
    | §21.x agent skills                        | `.agent/skills/<skill-name>/`                                                                                  |

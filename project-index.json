@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "spec_version": "2.7.0",
   "source": "https://github.com/niclaslindstedt",
-  "updated_at": "2026-05-14",
+  "updated_at": "2026-05-16",
   "projects": [
     {
       "name": "zag",
@@ -82,6 +82,13 @@
           "title": "Website deployment",
           "path": "examples/cv/10.4",
           "source_path": ".github/workflows/pages.yml",
+          "source_commit": "846ef7c814bf5b2f8661e151295d0d525e339159"
+        },
+        {
+          "section": "14",
+          "title": "Dependency hygiene",
+          "path": "examples/cv/14",
+          "source_path": ".github/dependabot.yml, .github/workflows/dependabot.yml, .agent/skills/fix-dependabot-prs/",
           "source_commit": "846ef7c814bf5b2f8661e151295d0d525e339159"
         }
       ]
