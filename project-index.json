@@ -19,6 +19,13 @@
           "path": "examples/zag/10.3",
           "source_path": ".github/workflows/version-bump.yml, .github/workflows/release.yml, scripts/release.sh, scripts/generate-changelog.sh, scripts/update-versions.sh",
           "source_commit": "4a837b468c708dff517cdfa2a06187ad975d0438"
+        },
+        {
+          "section": "3",
+          "title": "README badge row",
+          "path": "examples/zag/3",
+          "source_path": "README.md",
+          "source_commit": "54c70b93c7942b247acb98f8988e198aa44e2904"
         }
       ]
     },
